@@ -3,6 +3,7 @@ import Header from './components/Header'
 import FeaturesGrid from './components/FeaturesGrid'
 import IntegrationSteps from './components/IntegrationSteps'
 import ConnectShopify from './components/ConnectShopify'
+import StoreDataView from './components/StoreDataView'
 
 function App() {
   const [connectedStore, setConnectedStore] = useState(null)
@@ -59,6 +60,7 @@ function App() {
         </section>
 
         <ConnectShopify onConnected={setConnectedStore} />
+        {connectedStore && <StoreDataView domain={connectedStore.domain} />}
         <IntegrationSteps />
         <FeaturesGrid />
       </main>

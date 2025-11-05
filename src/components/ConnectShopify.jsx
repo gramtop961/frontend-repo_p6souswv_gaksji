@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
-import { CheckCircle2, Globe, Key, Link, Loader2 } from 'lucide-react'
+import { CheckCircle2, Globe, Key, Link, Loader2, AlertCircle } from 'lucide-react'
 
 export default function ConnectShopify({ onConnected }) {
   const [domain, setDomain] = useState('')
   const [token, setToken] = useState('')
   const [loading, setLoading] = useState(false)
   const [connectedAt, setConnectedAt] = useState(null)
+  const [error, setError] = useState('')
 
   const backendBase = useMemo(() => {
     return (import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000').replace(/\/$/, '')
@@ -17,13 +18,22 @@ export default function ConnectShopify({ onConnected }) {
     e.preventDefault()
     if (!domain.trim() || !token.trim()) return
     setLoading(true)
-
-    // Simulate an API call — in a real flow we would call our backend here
-    await new Promise((r) => setTimeout(r, 900))
-
-    setConnectedAt(new Date())
-    setLoading(false)
-    onConnected?.({ domain: formatDomain(domain), tokenMasked: maskToken(token) })
+    setError('')
+    try {
+      const res = await fetch(`${backendBase}/shopify/connect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain, access_token: token })
+      })
+      if (!res.ok) throw new Error(`Failed to connect: ${res.status}`)
+      const json = await res.json()
+      setConnectedAt(new Date())
+      onConnected?.({ domain: formatDomain(json.domain), verified: json.verified, store_name: json.store_name })
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const formatDomain = (value) => {
@@ -41,6 +51,12 @@ export default function ConnectShopify({ onConnected }) {
             <h2 id="connect-shopify" className="text-2xl md:text-3xl font-semibold tracking-tight">Connect your Shopify store</h2>
             <p className="text-gray-600 mt-1">Enter your store domain and Admin API access token to begin the integration.</p>
           </div>
+
+          {error && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-red-800 flex items-center gap-2 text-sm">
+              <AlertCircle className="h-4 w-4" /> {error}
+            </div>
+          )}
 
           {connectedAt ? (
             <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-green-800 flex items-center gap-2">
